@@ -51,7 +51,7 @@
         <testSourceDirectory>src/test/java</testSourceDirectory>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>src/main/resource</directory>
                 <filtering>true</filtering>
                 <excludes>
                     <exclude>**/*.java</exclude>
@@ -96,6 +96,14 @@
                     <nohelp>true</nohelp>
                     <splitindex>true</splitindex>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

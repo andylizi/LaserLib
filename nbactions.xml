@@ -40,4 +40,14 @@
                 <goal>package</goal>
             </goals>
         </action>
+        <action>
+            <actionName>javadoc</actionName>
+            <packagings>
+                <packaging>*</packaging>
+            </packagings>
+            <goals>
+                <goal>generate-sources</goal>
+                <goal>javadoc:jar</goal>
+            </goals>
+        </action>
     </actions>
