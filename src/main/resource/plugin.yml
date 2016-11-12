@@ -1,0 +1,5 @@
+name: LaserLib
+main: net.andylizi.laserlib.LaserLibrary
+version: 1.0
+author: andylizi
+depend: [ProtocolLib]
