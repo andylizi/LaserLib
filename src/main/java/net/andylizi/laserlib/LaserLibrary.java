@@ -16,8 +16,11 @@
  */
 package net.andylizi.laserlib;
 
+import java.io.*;
+import java.util.logging.Level;
 import net.andylizi.laserlib.api.LaserManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mcstats.MetricsLite;
 
 /**
  * LaserLib主类与入口点. 
@@ -29,6 +32,13 @@ public final class LaserLibrary extends JavaPlugin{
     @Override
     public void onEnable() {
         manager = new LaserManagerImpl();
+        MetricsLite metrics;
+        try {
+            metrics = new MetricsLite(this);
+            metrics.start();
+        } catch(IOException ex) {
+            getLogger().log(Level.WARNING, "Unable to load metrics config", ex);
+        }
 //        new Test();
     }
 
