@@ -17,77 +17,86 @@
 package net.andylizi.laserlib;
 
 import com.comphenix.protocol.events.PacketContainer;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
+import net.andylizi.laserlib.api.DummyEntity;
 import net.andylizi.laserlib.api.Laser;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 /**
- * 激光表示对象的骨架实现. 
+ * {@linkplain Laser 激光表示对象}的骨架实现. 
  * @author andylizi
  */
 abstract class AbstractLaser implements Laser{
-    private final Collection<PacketContainer> packets;
     private final Location startPos;
-    private final int guardianId;
+    private final DummyEntity guardian;
 
     /**
      * @param start 未经过调整的开始位置. 
-     * @param guardianId 守卫者的实体ID. 
-     * @param packets 用于生成激光的数据包. 
+     * @param guardian 虚拟守卫者实体. 
      */
-    protected AbstractLaser(Location start, int guardianId, Collection<PacketContainer> packets) {
+    protected AbstractLaser(Location start, DummyEntity guardian) {
         this.startPos = Objects.requireNonNull(start).clone();
-        if(guardianId <= 0)
-            throw new IllegalArgumentException();
-        this.guardianId = guardianId;
-        Validate.notEmpty(packets);
-        this.packets = Collections.unmodifiableCollection(packets);
+        this.guardian = Objects.requireNonNull(guardian);
     }
 
     @Override
-    public void broadcast() throws RuntimeException {
+    public void registerToTracker(int range) {
+        try {
+            guardian.registerToTracker(range, 3, false);
+        } catch(IllegalStateException ex) {
+            ex.printStackTrace();
+        } catch(ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void unregisterFromTracker() throws RuntimeException {
+        try {
+            guardian.unregisterFromTracker();
+        } catch(ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void broadcast() throws ReflectiveOperationException {
         play(startPos.getWorld());
     }
 
     @Override
-    public void play(World world) throws RuntimeException {
-        world.getPlayers().forEach(this::play);
+    public void play(World world) throws ReflectiveOperationException {
+        for(Player player : world.getPlayers())
+            play(player);
     }
 
     @Override
-    public void play(Player... players) throws RuntimeException {
+    public void play(Player... players) throws ReflectiveOperationException {
         for(Player player : players)
             play(player);
     }
 
     @Override
-    public void play(Player player) throws RuntimeException {
-        packets.forEach(packet -> {
-            try {
-                NMSUtil.pm.sendServerPacket(player, packet, true);
-            } catch(InvocationTargetException ex) {
-                throw new RuntimeException(ex);
-            }
-        });
+    public void play(Player player) throws ReflectiveOperationException {
+        for(PacketContainer packet : guardian.getPackets())
+            NMSUtil.pm.sendServerPacket(player, packet);
     }
     
     @Override
-    public void sendDestroyPacket() {
-        NMSUtil.removeEntity(guardianId);
+    public void destroy() {
+        guardian.destroy();
     }
 
     @Override public Location getSourcePos() { return startPos; }
-    @Override public int getGuardianId() { return guardianId; }
-    @Override public Collection<PacketContainer> _UNSAFE_getPackets() { return packets; }
+    @Override public DummyEntity getGuardian() { return guardian; }
+    @Override public Collection<PacketContainer> _UNSAFE_getPackets() throws ReflectiveOperationException 
+        { return guardian.getPackets(); }
 
     @Override
     public String toString() {
-        return String.format("Laser[%s]@%s", getGuardianId(), Integer.toHexString(hashCode()));
+        return String.format("Laser[%s]@%s", getGuardian().getEntityId(), Integer.toHexString(hashCode()));
     }
 }

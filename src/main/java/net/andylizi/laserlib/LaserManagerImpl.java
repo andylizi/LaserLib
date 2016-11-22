@@ -16,8 +16,9 @@
  */
 package net.andylizi.laserlib;
 
-import com.comphenix.protocol.events.PacketContainer;
 import java.util.*;
+import net.andylizi.laserlib.NMSUtil.DummyGuardianRecord;
+import net.andylizi.laserlib.api.DummyEntity;
 import net.andylizi.laserlib.api.Laser;
 import net.andylizi.laserlib.api.LaserManager;
 import org.apache.commons.lang.Validate;
@@ -25,10 +26,18 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
 /**
+ * {@linkplain LaserManager 激光管理器}的内部实现. 
  * @author andylizi
  */
 class LaserManagerImpl implements LaserManager{
+    /**
+     * 守卫者坐标与其眼睛的坐标的偏移量. 
+     */
     private static final float GUARDIAN_EYE_HEIGHT = 0.85f * 0.5f;
+    
+    /**
+     * 盔甲架坐标与其眼睛的坐标的偏移量. 
+     */
     private static final float ARMORSTAND_EYE_HEIGHT = 1.975f * 0.5f;
 
     protected LaserManagerImpl() { }
@@ -41,8 +50,9 @@ class LaserManagerImpl implements LaserManager{
                 "source and target must in the same world");
         Location guardianPos = source.clone().add(0, -GUARDIAN_EYE_HEIGHT, 0);
         try{
-            List<PacketContainer> packets = new ArrayList<>(1);
-            return new RealLaser(source, NMSUtil.createDummyGuardian(guardianPos, elder, target.getEntityId(), packets::add), target, packets);
+            DummyEntity guardian = NMSUtil.createDummyGuardian(guardianPos, elder, target.getEntityId());
+            NMSUtil.dummyGuardians.add(new DummyGuardianRecord(target.getEntityId(), guardian, null));
+            return new RealLaser(source, guardian, target);
         }catch(ReflectiveOperationException ex){
             throw new RuntimeException(ex);
         }
@@ -57,11 +67,10 @@ class LaserManagerImpl implements LaserManager{
         Location guardianPos = start.clone().add(0, -GUARDIAN_EYE_HEIGHT, 0);
         Location asPos = end.clone().add(0, -ARMORSTAND_EYE_HEIGHT, 0);
         try{
-            List<PacketContainer> packets = new ArrayList<>(2);
-            int dummyTargetId = NMSUtil.createDummyArmorStand(asPos, packets::add);
-            return new DummyLaser(start, 
-                    NMSUtil.createDummyGuardian(guardianPos, elder, dummyTargetId, packets::add), 
-                    end, dummyTargetId, packets);
+            DummyEntity dummyTarget = NMSUtil.createDummyArmorStand(asPos);
+            DummyEntity dummyGuardian = NMSUtil.createDummyGuardian(guardianPos, elder, dummyTarget.getEntityId());
+            NMSUtil.dummyGuardians.add(new DummyGuardianRecord(dummyTarget.getEntityId(), dummyGuardian, dummyTarget));
+            return new DummyLaser(start, dummyGuardian, end, dummyTarget);
         }catch(ReflectiveOperationException ex){
             throw new RuntimeException(ex);
         }

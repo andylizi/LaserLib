@@ -17,6 +17,7 @@
 package net.andylizi.laserlib.api;
 
 import com.comphenix.protocol.events.PacketContainer;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -26,9 +27,10 @@ import org.bukkit.entity.Player;
 /**
  * 激光的表示对象. 
  * @author andylizi
- * @version 1.0
+ * @version 2.0
  */
 public abstract interface Laser {
+    
     /**
      * 获取激光发射源的位置. 
      * <p>
@@ -37,77 +39,101 @@ public abstract interface Laser {
      *          此方法的}调整. 
      * @return 发射源. 由于MC渲染问题, 此位置有一定偏差. 
      */
-    public Location getSourcePos();
+    Location getSourcePos();
     
     /**
-     * 获取作为发射源的虚拟守卫者的实体ID. 
-     * @return 实体ID. 
+     * 获取作为发射源的虚拟守卫者. 
+     * @return 虚拟实体. 
      */
-    public int getGuardianId();
+    DummyEntity getGuardian();
     
     /**
      * 获取激光的目标是否为真实存在的. 
-     * @return false表示此激光的目标是用数据包伪造的, true反之. 
+     * @return false 表示此激光的目标是用数据包伪造的, true 反之. 
      */
-    public boolean isTargetReal();
+    boolean isTargetReal();
     
     /**
      * 如果激光的目标是真实存在的, 获取此激光的真实目标. 
-     * @return 如果 {@link #isTargetReal()} 不为true, 此方法返回null. 
-     *          由于MC渲染问题, 此位置有一定偏差. 
+     * @return 如果 {@link #isTargetReal()} 不为 true, 
+     *          此方法永远返回 null. 
      */
-    public Entity getTarget();
+    Entity getTarget();
     
     /**
-     * 获取此激光的目标的实体ID. 
-     * @return 实体ID. 若 {@link #isTargetReal()} 返回false, 
-     *          此实体ID所对应的实体是伪造的. 
+     * 如果激光的目标<b>*不*</b>是真实存在的, 获取此激光的目标的虚拟实体. 
+     * @return 如果 {@link #isTargetReal()} 不为 false, 
+     *          此方法永远返回 null. 
      */
-    public int getTargetId();
+    DummyEntity getDummyTarget();
     
     /**
      * 获取此激光的目标的位置. 
      */
-    public Location getTargetPos();
+    Location getTargetPos();
     
     /**
-     * 向服务器内的所有客户端广播移除此道激光的数据包. 
+     * 将此激光所需要的相关虚拟实体注册进所在世界的 EntityTracker. 
      * <p>
-     * 这并不会改变此对象的内部状态. 此对象还可复用. 
+     * 这并不会改变该对象的内部状态. 此对象还可复用. 
+     * 
+     * @param range 显示距离. 
+     * @throws RuntimeException 如果注册失败. 
      */
-    public void sendDestroyPacket();
+    void registerToTracker(int range) throws RuntimeException;
+    
+    /**
+     * 从所在世界的 EntityTracker 解除注册此激光所需要的相关虚拟实体. 
+     * <p>
+     * 这并不会改变该对象的内部状态. 此对象还可复用. 
+     * 
+     * @throws RuntimeException 如果解除注册失败.
+     */
+    void unregisterFromTracker() throws RuntimeException;
     
     /**
      * 向此激光所在世界的所有客户端广播生成此激光的数据包. 
-     * @throws RuntimeException 如果数据包发送失败. 
+     * @throws InvocationTargetException 如果数据包发送失败.
+     * @throws ReflectiveOperationException 如果数据包生成失败. 
      */
-    public void broadcast() throws RuntimeException;
+    void broadcast() throws InvocationTargetException, ReflectiveOperationException;
     
     /**
      * 向指定客户端发送生成此激光的数据包. 
      * @param player 接收的玩家
-     * @throws RuntimeException 如果数据包发送失败. 
+     * @throws InvocationTargetException 如果数据包发送失败.
+     * @throws ReflectiveOperationException 如果数据包生成失败. 
      */
-    public void play(Player player) throws RuntimeException;
+    void play(Player player) throws InvocationTargetException, ReflectiveOperationException;
     
     /**
      * 向指定客户端发送生成此激光的数据包. 
      * @param players 接收的玩家
-     * @throws RuntimeException 如果数据包发送失败. 
+     * @throws InvocationTargetException 如果数据包发送失败.
+     * @throws ReflectiveOperationException 如果数据包生成失败. 
      */
-    public void play(Player... players) throws RuntimeException;
+    void play(Player... players) throws InvocationTargetException, ReflectiveOperationException;
     
     /**
      * 向指定世界的所有客户端发送生成此激光的数据包. 
-     * @throws RuntimeException 如果数据包发送失败. 
+     * @throws InvocationTargetException 如果数据包发送失败.
+     * @throws ReflectiveOperationException 如果数据包生成失败. 
      */
-    public void play(World world) throws RuntimeException;
+    void play(World world) throws InvocationTargetException, ReflectiveOperationException;
     
+    /**
+     * 向服务器内的所有客户端广播移除此道激光的数据包. 
+     * <p>
+     * 这并不会改变该对象的内部状态. 此对象还可复用. 
+     */
+    void destroy();
+
     /**
      * 获得用于生成激光的数据包. 
      * @return 不可修改的集合. 
      * @deprecated 不安全 - 破坏封装性. 
+     * @throws ReflectiveOperationException 如果数据包生成失败. 
      */
     @Deprecated
-    public Collection<PacketContainer> _UNSAFE_getPackets();
+    Collection<PacketContainer> _UNSAFE_getPackets() throws ReflectiveOperationException;
 }

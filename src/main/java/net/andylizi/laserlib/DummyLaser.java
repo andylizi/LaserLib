@@ -17,46 +17,73 @@
 package net.andylizi.laserlib;
 
 import com.comphenix.protocol.events.PacketContainer;
-import java.util.Collection;
 import java.util.Objects;
+import net.andylizi.laserlib.api.DummyEntity;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 /**
  * 目标为虚拟实体的激光. 
  * @author andylizi
  */
 class DummyLaser extends AbstractLaser{
-    private final int targetId;
+    private final DummyEntity target;
     private final Location targetPos;
 
     /**
-     * @see AbstractLaser#AbstractLaser(Location, int, Collection) 
+     * @see AbstractLaser#AbstractLaser(Location, DummyEntity) 
      * @param targetPos 未经过调整的目标位置
-     * @param targetId 虚拟目标的实体ID
+     * @param target 虚拟目标的实体ID
      */
-    protected DummyLaser(Location start, int guardianId, Location targetPos, int targetId, Collection<PacketContainer> packets) {
-        super(start, guardianId, packets);
-        if(targetId <= 0)
-            throw new IllegalArgumentException();
-        this.targetId = targetId;
+    protected DummyLaser(Location start, DummyEntity guardian, Location targetPos, DummyEntity target) {
+        super(start, guardian);
+        this.target = Objects.requireNonNull(target);
         this.targetPos = Objects.requireNonNull(targetPos).clone();
     }
 
     @Override
-    public void sendDestroyPacket() {
-        super.sendDestroyPacket();
-        NMSUtil.removeEntity(targetId);
+    public void registerToTracker(int range) {
+        super.registerToTracker(range);
+        try {
+            target.registerToTracker(range, Integer.MAX_VALUE, false);
+        } catch(IllegalStateException ex) {
+        } catch(ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void unregisterFromTracker() throws RuntimeException {
+        super.unregisterFromTracker();
+        try {
+            target.unregisterFromTracker();
+        } catch(ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void play(Player player) throws ReflectiveOperationException {
+        super.play(player);
+        for(PacketContainer packet : target.getPackets())
+            NMSUtil.pm.sendServerPacket(player, packet);
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        target.destroy();
     }
 
     @Override public boolean isTargetReal() { return false; }
     @Override public Entity getTarget() { return null; }
-    @Override public int getTargetId() { return targetId; }
+    @Override public DummyEntity getDummyTarget() { return target; }
     @Override public Location getTargetPos() { return targetPos; }
 
     @Override
     public String toString() {
         return String.format("DummyLaser[%s -> %s]@%s", 
-                getGuardianId(), getTargetId(), Integer.toHexString(hashCode()));
+                getGuardian().getEntityId(), getDummyTarget(), Integer.toHexString(hashCode()));
     }
 }

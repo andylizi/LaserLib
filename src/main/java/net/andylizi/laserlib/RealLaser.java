@@ -16,9 +16,8 @@
  */
 package net.andylizi.laserlib;
 
-import com.comphenix.protocol.events.PacketContainer;
-import java.util.Collection;
 import java.util.Objects;
+import net.andylizi.laserlib.api.DummyEntity;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
@@ -30,24 +29,24 @@ class RealLaser extends AbstractLaser{
     private final Entity target;
 
     /**
-     * @see AbstractLaser#AbstractLaser(Location, int, Collection) 
+     * @see AbstractLaser#AbstractLaser(Location, DummyEntity) 
      * @param target 目标. 
      */
-    protected RealLaser(Location start, int guardianId, Entity target, Collection<PacketContainer> packets) {
-        super(start, guardianId, packets);
+    protected RealLaser(Location start, DummyEntity guardian, Entity target) {
+        super(start, guardian);
         this.target = Objects.requireNonNull(target);
         if(!target.isValid())
-            sendDestroyPacket();
+            destroy();
     }
 
     @Override public boolean isTargetReal() { return true; }
     @Override public Entity getTarget() { return target; }
-    @Override public int getTargetId() { return target.getEntityId(); }
+    @Override public DummyEntity getDummyTarget() { return null; }
     @Override public Location getTargetPos() { return target.getLocation(); }
 
     @Override
     public String toString() {
         return String.format("RealLaser[%s -> %s]@%s", 
-                getGuardianId(), getTargetId(), Integer.toHexString(hashCode()));
+                getGuardian().getEntityId(), getDummyTarget(), Integer.toHexString(hashCode()));
     }
 }

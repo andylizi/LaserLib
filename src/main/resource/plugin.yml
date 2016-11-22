@@ -1,5 +1,5 @@
-name: LaserLib
-main: net.andylizi.laserlib.LaserLibrary
-version: 1.0
+name: ${project.name}
+main: ${project.plugin.main}
+version: ${project.version}
 author: andylizi
 depend: [ProtocolLib]
