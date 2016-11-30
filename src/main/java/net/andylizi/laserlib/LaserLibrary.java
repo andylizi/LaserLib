@@ -32,17 +32,18 @@ import org.mcstats.MetricsLite;
  * @author andylizi
  */
 public final class LaserLibrary extends JavaPlugin implements Listener {
-    private static LaserManager manager;
+    private static final LaserManager manager = new LaserManagerImpl();;
     
     /**
      * 获得守卫者激光API. 
-     * @return 如果插件未加载完成则返回 null.
+     * @return API. 
      */
-    public static LaserManager getLaserManager() { return manager; }
+    public static LaserManager getLaserManager() {
+        return manager;
+    }
 
     @Override
     public void onEnable() {
-        manager = new LaserManagerImpl();
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getScheduler().runTaskLater(this, () -> {
             Bukkit.getWorlds().forEach(world -> {
