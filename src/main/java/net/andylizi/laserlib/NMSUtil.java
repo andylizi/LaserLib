@@ -29,7 +29,6 @@ import com.comphenix.protocol.reflect.accessors.MethodAccessor;
 import com.comphenix.protocol.utility.MinecraftReflection;
 import com.comphenix.protocol.utility.MinecraftVersion;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
-import com.comphenix.protocol.wrappers.WrappedDataWatcher.Serializer;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher.WrappedDataWatcherObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -63,7 +62,7 @@ class NMSUtil {
     /**
      * 服务器版本是否高于 1.8 (缤纷更新). 
      */
-    static final boolean ABOVE_BOUNTIFUL_UPDATE = currentVersion.compareTo(MinecraftVersion.COMBAT_UPDATE) >= 0;
+    static final boolean ABOVE_BOUNTIFUL_UPDATE = currentVersion.compareTo(new MinecraftVersion(1, 9, 0)) >= 0;
     
     /**
      * 服务器版本是否高于 1.11 (探险更新). 
@@ -73,22 +72,22 @@ class NMSUtil {
     /**
      * DataWatcher中Entity类的Flags属性.
      */
-    static final WrappedDataWatcherObject WOBJ_ENTITY_FLAGS;
+    static final DataWatcherObject<Byte> WOBJ_ENTITY_FLAGS;
     
     /**
      * DataWatcher中EntityArmorStand类的Flags属性.
      */
-    static final WrappedDataWatcherObject WOBJ_ARMORSTAND_FLAGS;
+    static final DataWatcherObject<Byte> WOBJ_ARMORSTAND_FLAGS;
     
     /**
      * DataWatcher中EntityGuardian类的Flags属性. 
      */
-    static final WrappedDataWatcherObject WOBJ_GUARDIAN_FLAGS;
+    static final DataWatcherObject<Object> WOBJ_GUARDIAN_FLAGS;
     
     /**
      * DataWatcher中EntityGuardian类的TargetEntity属性. 
      */
-    static final WrappedDataWatcherObject WOBJ_GUARDIAN_TARGET;
+    static final DataWatcherObject<Integer> WOBJ_GUARDIAN_TARGET;
     
     /**
      * 被创建过的虚拟守卫者与其目标的记录集合. 
@@ -111,10 +110,11 @@ class NMSUtil {
     static{
         if(ABOVE_BOUNTIFUL_UPDATE){
             try{
+                System.out.println(MinecraftReflection.getMinecraftClass("DataWatcherObject"));
                 FieldAccessor[] accessors = Accessors.getFieldAccessorArray
                     (MinecraftReflection.getEntityClass(), MinecraftReflection.getDataWatcherObjectClass(), true);
                 if(accessors.length == 0) throw new NoSuchFieldException("flags");
-                WOBJ_ENTITY_FLAGS = new WrappedDataWatcherObject(accessors[0].get(null));
+                WOBJ_ENTITY_FLAGS = new DataWatcherObject(new WrappedDataWatcherObject(accessors[0].get(null)));
             }catch(ReflectiveOperationException ex){
                 throw new UnsupportedOperationException("init DataWatcherObject of Entity", ex);
             }
@@ -122,7 +122,7 @@ class NMSUtil {
                 FieldAccessor[] accessors = Accessors.getFieldAccessorArray
                     (MinecraftReflection.getMinecraftClass("EntityArmorStand"), MinecraftReflection.getDataWatcherObjectClass(), true);
                 if(accessors.length == 0) throw new NoSuchFieldException("flags");
-                WOBJ_ARMORSTAND_FLAGS = new WrappedDataWatcherObject(accessors[0].get(null));
+                WOBJ_ARMORSTAND_FLAGS = new DataWatcherObject(new WrappedDataWatcherObject(accessors[0].get(null)));
             }catch(ReflectiveOperationException ex){
                 throw new UnsupportedOperationException("init DataWatcherObject of EntityArmorStand", ex);
             }
@@ -132,16 +132,16 @@ class NMSUtil {
                         MinecraftReflection.getDataWatcherObjectClass(), true);
                 if(accessors.length < 1) throw new NoSuchFieldException("flags");
                 if(accessors.length < 2) throw new NoSuchFieldException("target entity");
-                WOBJ_GUARDIAN_FLAGS = new WrappedDataWatcherObject(accessors[0].get(null));
-                WOBJ_GUARDIAN_TARGET = new WrappedDataWatcherObject(accessors[1].get(null));
+                WOBJ_GUARDIAN_FLAGS = new DataWatcherObject(new WrappedDataWatcherObject(accessors[0].get(null)));
+                WOBJ_GUARDIAN_TARGET = new DataWatcherObject(new WrappedDataWatcherObject(accessors[1].get(null)));
             }catch(ReflectiveOperationException ex){
                 throw new UnsupportedOperationException("init DataWatcherObjects of EntityGuardian", ex);
             }
         }else{
-            WOBJ_ENTITY_FLAGS = new WrappedIndexDataWatcherObject(0);      // 0 - Entity - Flags
-            WOBJ_ARMORSTAND_FLAGS = new WrappedIndexDataWatcherObject(10); // 10 - ArmorStand - Flags
-            WOBJ_GUARDIAN_FLAGS = new WrappedIndexDataWatcherObject(16);   // 16 - Guardian - Flags
-            WOBJ_GUARDIAN_TARGET = new WrappedIndexDataWatcherObject(17);  // 17 - Guardian - Target EID
+            WOBJ_ENTITY_FLAGS = new DataWatcherObject(0);      // 0 - Entity - Flags
+            WOBJ_ARMORSTAND_FLAGS = new DataWatcherObject(10); // 10 - ArmorStand - Flags
+            WOBJ_GUARDIAN_FLAGS = new DataWatcherObject(16);   // 16 - Guardian - Flags
+            WOBJ_GUARDIAN_TARGET = new DataWatcherObject(17);  // 17 - Guardian - Target EID
         }
     }
     
@@ -212,20 +212,17 @@ class NMSUtil {
         Object entity = (useIndependentElderGuardian ? CONST_ENTITY_ELDER_GUARDIAN : CONST_ENTITY_GURADIAN)
                 .newInstance(bukkitUnwrapper.unwrapItem(pos.getWorld()));
         WrappedDataWatcher dataWatcher = new WrappedDataWatcher(readDataWatcher(entity));
-        updateDataWatcherValue(dataWatcher, WOBJ_ENTITY_FLAGS, (byte) 0x20);    // 0x20 Invisible
-        updateDataWatcherValue(dataWatcher, WOBJ_GUARDIAN_TARGET, target);      // Target EID
+        WOBJ_ENTITY_FLAGS.set(dataWatcher, (byte) 0x20);    // 0x20 Invisible
+        WOBJ_GUARDIAN_TARGET.set(dataWatcher, target);      // Target EID
         if(isElder)
-            if(ABOVE_BOUNTIFUL_UPDATE){
-                if(ABOVE_EXPLORATION_UPDATE){
-                    updateDataWatcherValue(dataWatcher, 
-                            WOBJ_GUARDIAN_FLAGS, true);                         // true RetractingSpikes
-                }else{
-                    updateDataWatcherValue(dataWatcher, 
-                            WOBJ_GUARDIAN_FLAGS, (byte) (0x2 | 0x4));           // 0x2 RetractingSpikes | 0x4 Elder
+            if(ABOVE_BOUNTIFUL_UPDATE){        // 1.9+
+                if(ABOVE_EXPLORATION_UPDATE){  // 1.11+
+                    WOBJ_GUARDIAN_FLAGS.set(dataWatcher, true);                 // true RetractingSpikes
+                }else{                         // 1.9 - 1.10
+                    WOBJ_GUARDIAN_FLAGS.set(dataWatcher, (byte) (0x2 | 0x4));   // 0x2 RetractingSpikes | 0x4 Elder
                 }
-            }else{
-                updateDataWatcherValue(dataWatcher, 
-                        WOBJ_GUARDIAN_FLAGS, 0x2 | 0x4);                        // 0x2 RetractingSpikes | 0x4 Elder
+            }else{                             // 1.8
+                WOBJ_GUARDIAN_FLAGS.set(dataWatcher, 0x2 | 0x4);                // 0x2 RetractingSpikes | 0x4 Elder
             }
         writeEntityData(entity, pos, dataWatcher.getHandle());
         return new DummyEntityImpl(entity);
@@ -246,10 +243,8 @@ class NMSUtil {
         }
         Object entity = CONST_ENTITY_ARMORSTAND.newInstance(bukkitUnwrapper.unwrapItem(pos.getWorld()));
         WrappedDataWatcher dataWatcher = new WrappedDataWatcher(FieldUtils.readField(entity, "datawatcher", true));
-        updateDataWatcherValue(dataWatcher, WOBJ_ENTITY_FLAGS, 
-                (byte) 0x20);                   // 0 - 0x20 Invisible
-        updateDataWatcherValue(dataWatcher, WOBJ_ARMORSTAND_FLAGS, 
-                (byte) (0x1 | 0x8 | 0x10));     // 11 - (0x1 Small | 0x8 NoBasePlate | 0x10 Marker)
+        WOBJ_ENTITY_FLAGS.set(dataWatcher, (byte) 0x20);                        // 0 - 0x20 Invisible
+        WOBJ_ARMORSTAND_FLAGS.set(dataWatcher, (byte) (0x1 | 0x8 | 0x10));      // 11 - (0x1 Small | 0x8 NoBasePlate | 0x10 Marker)
         writeEntityData(entity, pos, dataWatcher.getHandle());
         return new DummyEntityImpl(entity);
     }
@@ -311,7 +306,7 @@ class NMSUtil {
             FIELD_TRACKEDENTITIES = Accessors.getFieldAccessor(tracker.getClass(), Set.class, true);
         }
         Object entry;
-        if(ABOVE_BOUNTIFUL_UPDATE){
+        if(ABOVE_BOUNTIFUL_UPDATE){     // 1.9+
             entry = CONST_ENTITY_TRACKER_ENTRY.newInstance(entity, range, range, updateFrequency, sendVelocityUpdates);
         }else{
             entry = CONST_ENTITY_TRACKER_ENTRY.newInstance(entity, range, updateFrequency, sendVelocityUpdates);
@@ -481,51 +476,61 @@ class NMSUtil {
     }
 
     /**
-     * 以版本兼容的方式更新 DataWatcher 中的值. 
-     * @param <T> 值的类型. 
-     * @param dataWatcher 要更新的 DataWatcher
-     * @param object 键
-     * @param value 值
-     */
-    static <T> void updateDataWatcherValue(WrappedDataWatcher dataWatcher, WrappedDataWatcherObject object, T value){
-        if(object.getSerializer() != null)
-            dataWatcher.setObject(object, value, false);
-        else dataWatcher.setObject(object.getIndex(), value, false);
-    }
-    
-    /**
-     * 兼容低版本中使用的数字索引方式. 
+     * 兼容MC低版本中使用的数字索引方式 
+     * 与ProtocolLib低版本中没有提供 
+     * WrappedDataWatcherObject 的情况. 
      * @author andylizi
      */
-    static class WrappedIndexDataWatcherObject extends WrappedDataWatcherObject{
+    static class DataWatcherObject<T>{
         private final int index;
+        private final Object obj;
 
         /**
+         * 用索引构造. 
          * @param index 索引编号
          */
-        public WrappedIndexDataWatcherObject(int index) {
+        public DataWatcherObject(int index) {
             this.index = index;
+            this.obj = null;
         }
-
-        @Override public int getIndex() { return index; }
-        @Override public Serializer getSerializer() { return null; }
-
+        
         /**
-         * 违背自反性. 
+         * 用 WrappedDataWatcherObject 构造. 
+         * @param obj WrappedDataWatcherObject.
+         * @throws ClassCastException 如果传入的参数不是 WrappedDataWatcherObject 或其子类. 
          */
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof WrappedDataWatcherObject)) return false;
-            if (this.index != ((WrappedDataWatcherObject) obj).getIndex()) return false;
-            return true;
+        public DataWatcherObject(Object obj) throws ClassCastException{
+            WrappedDataWatcherObject tmp = (WrappedDataWatcherObject) obj;
+            this.index = tmp.getIndex();
+            this.obj = tmp;
         }
-
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 37 * hash + this.index;
-            return hash;
+        
+        /**
+         * 设置指定的 DataWatcher 中此索引的值. 
+         * @param update 是否更新. 
+         */
+        public void set(WrappedDataWatcher dataWatcher, T value, boolean update){
+            if(obj == null){
+                dataWatcher.setObject(index, value, update);
+            }else dataWatcher.setObject((WrappedDataWatcherObject) obj, value, update);
+        }
+        
+        /**
+         * 等同于调用 <code>set(dataWatcher, value, false);</code> . 
+         * @see #set(WrappedDataWatcher, Object, boolean) 
+         */
+        public void set(WrappedDataWatcher dataWatcher, T value){
+            set(dataWatcher, value, false);
+        }
+        
+        /**
+         * 从指定的 DataWatcher 中读取此索引的值. 
+         * @throws ClassCastException 如果类型转换失败. 
+         */
+        public T get(WrappedDataWatcher dataWatcher) throws ClassCastException{
+            if(obj == null){
+                return (T) dataWatcher.getObject(index);
+            }else return (T) dataWatcher.getObject((WrappedDataWatcherObject) obj);
         }
     }
     

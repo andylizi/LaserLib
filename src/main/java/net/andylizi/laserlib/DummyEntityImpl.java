@@ -40,7 +40,7 @@ class DummyEntityImpl implements DummyEntity {
         if(!MinecraftReflection.isMinecraftEntity(entity))
             throw new IllegalArgumentException();
         this.entityId = NMSUtil.readEntityId(entity);
-        this.living = MinecraftReflection.is(MinecraftReflection.getMinecraftClass("EntityLiving"), entity);
+        this.living = MinecraftReflection.getMinecraftClass("EntityLiving").isInstance(entity);
     }
     
     @Override

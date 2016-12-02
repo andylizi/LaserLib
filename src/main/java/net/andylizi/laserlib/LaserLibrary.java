@@ -46,17 +46,22 @@ public final class LaserLibrary extends JavaPlugin implements Listener {
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getScheduler().runTaskLater(this, () -> {
-            Bukkit.getWorlds().forEach(world -> {
-                try {
-                    NMSUtil.injectWorldEventListener(world);
-                } catch(ReflectiveOperationException ex) {
-                    getLogger().log(Level.WARNING, "Unable to register eventlisteners of world \"" + world.getName() + "\"", ex);
-                }
-            });
+            try{
+                Bukkit.getWorlds().forEach(world -> {
+                    try {
+                        NMSUtil.injectWorldEventListener(world);
+                    } catch(ReflectiveOperationException ex) {
+                        getLogger().log(Level.WARNING, "Unable to register eventlisteners of world \"" + world.getName() + "\"", ex);
+                    }
+                });
+            }catch(Throwable t){
+                setEnabled(false);
+                throw t;
+            }
         }, 1L);
         startMetrics();
-        
-//        new Test();
+
+        new Test();
     }
 
     @Override
@@ -65,7 +70,7 @@ public final class LaserLibrary extends JavaPlugin implements Listener {
     }
     
     /**
-     * 1.9 - Fix.
+     * 1.9 Fix.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event){
@@ -84,25 +89,26 @@ public final class LaserLibrary extends JavaPlugin implements Listener {
         }
     }
 
-//    private class Test implements org.bukkit.event.Listener {
-//        {
-//            getServer().getPluginManager().registerEvents(this, LaserLibrary.this);
-//        }
-//        
-//        @org.bukkit.event.EventHandler
-//        public void onChat(org.bukkit.event.player.PlayerChatEvent event) throws ReflectiveOperationException {
-//            org.bukkit.Location ploc = event.getPlayer().getLocation();
-//            manager.createLaser(ploc.clone().add(5, 0, 0), event.getPlayer(), true).registerToTracker(60);
-//            for(org.bukkit.Location loc : buildCircle(ploc.clone().add(0, -10, 0), 8, 0.1)){
-//                manager.createLaser(ploc, loc, false).broadcast();
-//            }
-//        }
-//
-//        public java.util.Collection<org.bukkit.Location> buildCircle(org.bukkit.Location center, double r, double p) {
-//            java.util.List<org.bukkit.Location> s = new java.util.LinkedList<>();
-//            for(double i = 0; i <= Math.PI * 2; i += p)
-//                s.add(center.clone().add(Math.cos(i) * r, 0, Math.sin(i) * r));
-//            return s;
-//        }
-//    }
+    private class Test implements org.bukkit.event.Listener {
+        {
+            getServer().getPluginManager().registerEvents(this, LaserLibrary.this);
+        }
+        
+        @org.bukkit.event.EventHandler
+        public void onChat(org.bukkit.event.player.PlayerChatEvent event) throws ReflectiveOperationException {
+            org.bukkit.Location ploc = event.getPlayer().getLocation();
+            manager.createLaser(ploc.clone().add(5, 0, 0), event.getPlayer(), true).broadcast();
+            manager.createLaser(ploc.clone().add(-5, 0, 0), event.getPlayer(), false).registerToTracker(100);
+            for(org.bukkit.Location loc : buildCircle(ploc.clone().add(0, -10, 0), 8, 0.1)){
+                manager.createLaser(ploc, loc, false).registerToTracker(60);
+            }
+        }
+
+        public java.util.Collection<org.bukkit.Location> buildCircle(org.bukkit.Location center, double r, double p) {
+            java.util.List<org.bukkit.Location> s = new java.util.LinkedList<>();
+            for(double i = 0; i <= Math.PI * 2; i += p)
+                s.add(center.clone().add(Math.cos(i) * r, 0, Math.sin(i) * r));
+            return s;
+        }
+    }
 }
