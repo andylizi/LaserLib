@@ -455,7 +455,7 @@ public class NMSUtil {
      * 当一个实体从世界中被移除时触发. 
      * @param entityId 被移除的实体ID. 
      */
-    private static void onEntityRemoved(int entityId){
+    static void onEntityRemoved(int entityId){
         dummyGuardians.removeIf(record -> {
             if(record.targetId == entityId){
                 record.destroy();
