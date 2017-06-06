@@ -43,7 +43,7 @@ import org.bukkit.World;
  * 核心操作的实现. 
  * @author andylizi
  */
-class NMSUtil {
+public class NMSUtil {
     /**
      * ProtocolLib 提供的 {@link ProtocolManager}. 
      */
@@ -153,7 +153,7 @@ class NMSUtil {
      * @return 包含所用数据包的集合. 
      * @throws ReflectiveOperationException 如果创建失败. 
      */
-    static Collection<PacketContainer> createEntitySpawnPacket(Object entity, int objectType, int objectData) throws ReflectiveOperationException{
+    public static Collection<PacketContainer> createEntitySpawnPacket(Object entity, int objectType, int objectData) throws ReflectiveOperationException{
         if(CONST_PACKET_SPAWN_ENTITY == null){
             CONST_PACKET_SPAWN_ENTITY = PacketType.Play.Server.SPAWN_ENTITY.getPacketClass()
                     .getConstructor(MinecraftReflection.getMinecraftClass("Entity"), int.class, int.class);
@@ -170,7 +170,7 @@ class NMSUtil {
      * @return 包含所用数据包的集合. 
      * @throws ReflectiveOperationException 如果创建失败. 
      */
-    static Collection<PacketContainer> createLivingEntitySpawnPacket(Object entity) throws ReflectiveOperationException{
+    public static Collection<PacketContainer> createLivingEntitySpawnPacket(Object entity) throws ReflectiveOperationException{
         if(CONST_PACKET_SPAWN_ENTITY_LIVING == null){
             CONST_PACKET_SPAWN_ENTITY_LIVING = PacketType.Play.Server.SPAWN_ENTITY_LIVING.getPacketClass()
                     .getConstructor(MinecraftReflection.getMinecraftClass("EntityLiving"));
@@ -196,7 +196,7 @@ class NMSUtil {
      * @return 虚拟守卫者的表示对象. 
      * @throws ReflectiveOperationException 如果创建失败.
      */
-    static DummyEntity createDummyGuardian(Location pos, boolean isElder, int target) 
+    public static DummyEntity createDummyGuardian(Location pos, boolean isElder, int target) 
             throws ReflectiveOperationException{
         boolean useIndependentElderGuardian = isElder && ABOVE_EXPLORATION_UPDATE;
         if(CONST_ENTITY_GURADIAN == null){
@@ -234,7 +234,7 @@ class NMSUtil {
      * @return 虚拟盔甲架的表示对象. 
      * @throws ReflectiveOperationException 如果创建失败.
      */
-    static DummyEntity createDummyArmorStand(Location pos) 
+    public static DummyEntity createDummyArmorStand(Location pos) 
             throws ReflectiveOperationException{
         if(CONST_ENTITY_ARMORSTAND == null){
             CONST_ENTITY_ARMORSTAND = MinecraftReflection.getMinecraftClass("EntityArmorStand")
@@ -261,7 +261,7 @@ class NMSUtil {
      * @throws IllegalStateException 如果指定实体已被注册. 
      * @throws ReflectiveOperationException 如果注册失败. 
      */
-    static Object addToTracker(Object world, Object tracker, Object entity, 
+    public static Object addToTracker(Object world, Object tracker, Object entity, 
             int range, int updateFrequency, boolean sendVelocityUpdates) 
             throws IllegalStateException, ReflectiveOperationException{
         if(METHOD_INTHASHMAP_CONTAINSITEM == null){
@@ -328,7 +328,7 @@ class NMSUtil {
      * @throws IllegalStateException 如果指定实体已被注册. 
      * @throws ReflectiveOperationException 如果注册失败. 
      */
-    static Object addToTracker(Object world, Object entity, 
+    public static Object addToTracker(Object world, Object entity, 
             int range, int updateFrequency, boolean sendVelocityUpdates) 
             throws IllegalStateException, ReflectiveOperationException{
         return addToTracker(world, FieldUtils.readField(world, "tracker"), entity, range, updateFrequency, sendVelocityUpdates);
@@ -340,7 +340,7 @@ class NMSUtil {
      * @param entity 要解除注册的实体. 
      * @throws ReflectiveOperationException 如果解除注册失败. 
      */
-    static void removeFromTracker(Object tracker, Object entity) throws ReflectiveOperationException{
+    public static void removeFromTracker(Object tracker, Object entity) throws ReflectiveOperationException{
         MethodUtils.invokeMethod(tracker, "untrackEntity", entity);
     }
     
@@ -349,7 +349,7 @@ class NMSUtil {
      * @param entity 解除注册的实体. 
      * @throws ReflectiveOperationException 如果解除注册失败. 
      */
-    static void removeFromTracker(Object entity) throws ReflectiveOperationException{
+    public static void removeFromTracker(Object entity) throws ReflectiveOperationException{
         MethodUtils.invokeMethod(FieldUtils.readField(FieldUtils.readField(entity, "world"), "tracker"), "untrackEntity", entity);
     }
 
@@ -360,7 +360,7 @@ class NMSUtil {
      * @param dataWatcher 实体的 DataWatcher 对象. 
      * @throws IllegalAccessException 如果写入失败. 
      */
-    static void writeEntityData(Object entity, Location pos, Object dataWatcher) throws IllegalAccessException{
+    public static void writeEntityData(Object entity, Location pos, Object dataWatcher) throws IllegalAccessException{
         FieldUtils.writeField(entity, "locX", pos.getX(), false);
         FieldUtils.writeField(entity, "locY", pos.getY(), false);
         FieldUtils.writeField(entity, "locZ", pos.getZ(), false);
@@ -376,7 +376,7 @@ class NMSUtil {
      * @return 实体ID.
      * @throws ReflectiveOperationException 如果反射操作失败. 
      */
-    static int readEntityId(Object entity) throws ReflectiveOperationException{
+    public static int readEntityId(Object entity) throws ReflectiveOperationException{
         if(FIELD_ENTITY_ID != null)
             return FIELD_ENTITY_ID.getInt(entity);
         return (int) FieldUtils.readField(entity, "id", true);
@@ -388,7 +388,7 @@ class NMSUtil {
      * @return DataWatcher.
      * @throws ReflectiveOperationException 如果反射操作失败. 
      */
-    static Object readDataWatcher(Object entity) throws ReflectiveOperationException{
+    public static Object readDataWatcher(Object entity) throws ReflectiveOperationException{
         return FieldUtils.readField(entity, "datawatcher", true);
     }
 
@@ -396,7 +396,7 @@ class NMSUtil {
      * 向所有在线客户端广播一个移除指定实体的数据包. 
      * @param id 实体ID. 
      */
-    static void removeEntity(int id) {
+    public static void removeEntity(int id) {
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
         packet.getIntegerArrays().write(0, new int[] { id });
         pm.broadcastServerPacket(packet);
@@ -407,7 +407,7 @@ class NMSUtil {
      * @param bukkitWorld 指定世界. 
      * @throws ReflectiveOperationException 如果操作失败. 
      */
-    static void injectWorldEventListener(World bukkitWorld) throws ReflectiveOperationException{
+    public static void injectWorldEventListener(World bukkitWorld) throws ReflectiveOperationException{
         if(FIELD_ENTITY_ID == null){
             FIELD_ENTITY_ID = MinecraftReflection.getEntityClass().getDeclaredField("id");
             FIELD_ENTITY_ID.setAccessible(true);
@@ -455,7 +455,7 @@ class NMSUtil {
      * 当一个实体从世界中被移除时触发. 
      * @param entityId 被移除的实体ID. 
      */
-    static void onEntityRemoved(int entityId){
+    private static void onEntityRemoved(int entityId){
         dummyGuardians.removeIf(record -> {
             if(record.targetId == entityId){
                 record.destroy();
@@ -468,7 +468,7 @@ class NMSUtil {
     /**
      * 移除所有虚拟守卫者与其虚拟的目标(如果有).
      */
-    static void removeAllLaser(){
+    public static void removeAllLaser(){
         dummyGuardians.removeIf(record -> {
             record.destroy();
             return true;
